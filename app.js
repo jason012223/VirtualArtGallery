@@ -1,5 +1,17 @@
 class Gallery {
     constructor() {
+        this.audioTracks = [
+            new Audio('music/music1.mp3'),
+            new Audio('music/music2.mp3'),
+            new Audio('music/music3.mp3')
+        ];
+        this.currentTrackIndex = 0;
+        this.audioTracks.forEach(track => {
+            track.loop = true; 
+            track.volume = 0.5; 
+        });
+        this.audioTracks[this.currentTrackIndex].play(); 
+
         this.scene = new THREE.Scene();
         this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
         this.camera.position.set(0, 2, 10);
@@ -15,22 +27,28 @@ class Gallery {
         this.pointLight.position.set(0, 5, 5);
         this.scene.add(this.pointLight);
 
-        this.wallMaterial = new THREE.MeshStandardMaterial({ color: 0x808080 });
-        this.gallerySize = { width: 30, height: 10, depth: 20 };
+        this.wallMaterial = new THREE.MeshStandardMaterial({ color: 0xcda174, side: THREE.DoubleSide });
+        this.gallerySize = { width: 50, height: 10, depth: 50 };
 
         this.artworks = [
             { file: "artworks/art1.jpg", position: [-3, 2, -9] },
             { file: "artworks/art2.jpg", position: [3, 2, -9] },
             { file: "artworks/art3.jpg", position: [-4, 2, 9] },
-            { file: "artworks/art4.jpg", position: [4, 2, 9] }
+            { file: "artworks/art4.jpg", position: [4, 2, 9] },
+            { file: "artworks/art5.jpg", position: [-7, 2, -9] },
+            { file: "artworks/art6.jpg", position: [7, 2, -9] },
+            { file: "artworks/art7.jpg", position: [-8, 2, 9] },
+            { file: "artworks/art8.jpg", position: [8, 2, 9] },
+            { file: "artworks/art9.jpg", position: [0, 2, -12] },
+            { file: "artworks/art10.jpg", position: [0, 2, 12] } 
         ];
 
         this.keys = {};
         this.mouse = { x: 0, y: 0 };
         this.isPointerLocked = false;
 
-        this.pitch = 0;
-        this.yaw = 0;
+        this.pitch = 0; 
+        this.yaw = 0;  
 
         this.isJumping = false;
         this.verticalVelocity = 0;
@@ -53,23 +71,23 @@ class Gallery {
         floor.rotation.x = -Math.PI / 2;
         floor.position.y = 0;
         this.scene.add(floor);
-
+    
         const backWall = new THREE.Mesh(new THREE.PlaneGeometry(this.gallerySize.width, this.gallerySize.height), this.wallMaterial);
         backWall.position.z = -this.gallerySize.depth / 2;
         backWall.position.y = this.gallerySize.height / 2;
         this.scene.add(backWall);
-
+    
         const frontWall = new THREE.Mesh(new THREE.PlaneGeometry(this.gallerySize.width, this.gallerySize.height), this.wallMaterial);
         frontWall.position.z = this.gallerySize.depth / 2;
         frontWall.position.y = this.gallerySize.height / 2;
         this.scene.add(frontWall);
-
+    
         const leftWall = new THREE.Mesh(new THREE.PlaneGeometry(this.gallerySize.depth, this.gallerySize.height), this.wallMaterial);
         leftWall.rotation.y = Math.PI / 2;
         leftWall.position.x = -this.gallerySize.width / 2;
         leftWall.position.y = this.gallerySize.height / 2;
         this.scene.add(leftWall);
-
+    
         const rightWall = new THREE.Mesh(new THREE.PlaneGeometry(this.gallerySize.depth, this.gallerySize.height), this.wallMaterial);
         rightWall.rotation.y = -Math.PI / 2;
         rightWall.position.x = this.gallerySize.width / 2;
@@ -77,18 +95,23 @@ class Gallery {
         this.scene.add(rightWall);
 
         const ceiling = new THREE.Mesh(new THREE.PlaneGeometry(this.gallerySize.width , this.gallerySize.depth), this.wallMaterial);
-        ceiling.rotation.x = Math.PI / 2; // Rotate to face downwards
-        ceiling.position.y = this.gallerySize.height; // Position it at the top
+        ceiling.rotation.x = Math.PI / 2; 
+        ceiling.position.y = this.gallerySize.height; 
         this.scene.add(ceiling);
     }
-
     loadArtworks() {
         const loader = new THREE.TextureLoader();
-
+    
         this.artworks.forEach(art => {
             loader.load(art.file, (texture) => {
-                const plane = new THREE.Mesh(new THREE.PlaneGeometry(3, 3), new THREE.MeshBasicMaterial({ map: texture }));
+                const material = new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide });
+                const plane = new THREE.Mesh(new THREE.PlaneGeometry(3, 3), material);
                 plane.position.set(...art.position);
+    
+                if (art.position[2] === -this.gallerySize.depth / 2) {
+                    plane.rotation.y = Math.PI;
+                }
+    
                 this.scene.add(plane);
             });
         });
@@ -117,6 +140,26 @@ class Gallery {
                 document.removeEventListener('mousemove', this.onMouseMove.bind(this));
             }
         });
+
+        window.addEventListener("keydown", (e) => {
+            if (e.key === 'n') {
+                this.nextTrack();
+            } else if (e.key === 'p') {
+                this.previousTrack();
+            }
+        });
+    }
+
+    nextTrack() {
+        this.audioTracks[this.currentTrackIndex].pause();
+        this.currentTrackIndex = (this.currentTrackIndex + 1) % this.audioTracks.length;
+        this.audioTracks[this.currentTrackIndex].play();
+    }
+
+    previousTrack() {
+        this.audioTracks[this.currentTrackIndex].pause();
+        this.currentTrackIndex = (this.currentTrackIndex - 1 + this.audioTracks.length) % this.audioTracks.length;
+        this.audioTracks[this.currentTrackIndex].play();
     }
 
     enterPointerLock() {
@@ -129,8 +172,8 @@ class Gallery {
         const movementX = event.movementX || event.mozMovementX || event.webkitMovementX || 0;
         const movementY = event.movementY || event.mozMovementY || event.webkitMovementY || 0;
 
-        this.yaw -= movementX * 0.001; // Horizontal rotation
-        this.pitch -= movementY * 0.001; // Vertical rotation
+        this.yaw -= movementX * 0.001; 
+        this.pitch -= movementY * 0.001; 
 
         this.pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.pitch));
 
@@ -142,13 +185,11 @@ class Gallery {
 
         const combinedQuaternion = new THREE.Quaternion();
         combinedQuaternion.multiplyQuaternions(yawQuaternion, pitchQuaternion);
-
-        // Apply the combined quaternion to the camera's rotation
         this.camera.quaternion.copy(combinedQuaternion);
     }
 
     handleControls() {
-        const speed = this.keys["Shift"] ? 0.2 : 0.1;
+        const speed = this.keys["Shift"] ? 0.2 : 0.1; 
         const forward = new THREE.Vector3();
         this.camera.getWorldDirection(forward);
         forward.y = 0; 
@@ -161,20 +202,18 @@ class Gallery {
         if (this.keys["s"]) this.camera.position.add(forward.clone().negate().multiplyScalar(speed));
         if (this.keys["a"]) this.camera.position.add(right.clone().negate().multiplyScalar(speed));
         if (this.keys["d"]) this.camera.position.add(right.clone().multiplyScalar(speed));
-
         if (this.keys[" "] && !this.isJumping) {
             this.isJumping = true;
             this.verticalVelocity = this.jumpStrength; 
         }
 
         if (this.isJumping) {
-            this.verticalVelocity += this.gravity; 
-            this.camera.position.y += this.verticalVelocity; 
+            this.verticalVelocity += this.gravity;
+            this.camera.position.y += this.verticalVelocity;
 
-          
             if (this.camera.position.y <= this.groundLevel) {
-                this.camera.position.y = this.groundLevel; 
-                this.isJumping = false; 
+                this.camera.position.y = this.groundLevel;
+                this.isJumping = false;
                 this.verticalVelocity = 0; 
             }
         }
