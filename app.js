@@ -162,7 +162,7 @@ class Gallery {
             this.enterPointerLock();
         });
 
-        // Add touch event listeners
+        // Add touch event listeners for mobile devices
         instructions.addEventListener('touchstart', () => {
             this.enterPointerLock();
         });
