@@ -169,6 +169,10 @@ class Gallery {
 
         document.getElementById('next-music').addEventListener('click', () => this.nextTrack());
         document.getElementById('prev-music').addEventListener('click', () => this.previousTrack());
+
+        this.renderer.domElement.addEventListener('touchstart', this.onTouchStart.bind(this), false);
+        this.renderer.domElement.addEventListener('touchmove', this.onTouchMove.bind(this), false);
+        this.renderer.domElement.addEventListener('touchend', this.onTouchEnd.bind(this), false);
     }
 
     setupMobileControls() {
@@ -196,7 +200,45 @@ class Gallery {
             this.keys['d'] = false;
         });
     }
+onTouchStart(event) {
+    if (event.touches.length === 1) {
+        this.isTouching = true;
+        this.touchStartX = event.touches[0].pageX;
+        this.touchStartY = event.touches[0].pageY;
+    }
+}
 
+onTouchMove(event) {
+    if (this.isTouching && event.touches.length === 1) {
+        const touchMoveX = event.touches[0].pageX;
+        const touchMoveY = event.touches[0].pageY;
+
+        const movementX = touchMoveX - this.touchStartX;
+        const movementY = touchMoveY - this.touchStartY;
+
+        this.yaw -= movementX * 0.001;
+        this.pitch -= movementY * 0.001;
+
+        this.pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.pitch));
+
+        const yawQuaternion = new THREE.Quaternion();
+        yawQuaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), this.yaw);
+
+        const pitchQuaternion = new THREE.Quaternion();
+        pitchQuaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 0), this.pitch);
+
+        const combinedQuaternion = new THREE.Quaternion();
+        combinedQuaternion.multiplyQuaternions(yawQuaternion, pitchQuaternion);
+        this.camera.quaternion.copy(combinedQuaternion);
+
+        this.touchStartX = touchMoveX;
+        this.touchStartY = touchMoveY;
+    }
+}
+
+onTouchEnd(event) {
+    this.isTouching = false;
+}
     nextTrack() {
         this.audioTracks[this.currentTrackIndex].pause();
         this.currentTrackIndex = (this.currentTrackIndex + 1) % this.audioTracks.length;
